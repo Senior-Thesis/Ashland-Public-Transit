@@ -34,7 +34,7 @@ Ensure your .env file inside the server directory contains the correct MongoDB c
 You must run both backend and frontend simultaneously.
 Terminal 1 (Backend):
 cd server
-nodemon server.js
+node server.js
 
 Terminal 2 (Frontend):
 cd client
