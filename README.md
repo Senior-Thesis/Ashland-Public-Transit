@@ -1,7 +1,7 @@
 # Ashland Transit: Smart Scheduling System
 
 **Team:** EagleLink Systems  
-**Members:** Ian Kichurchak, Dhruval Anandkar, Noah Crenshaw
+**Members:** Dhruval Anandkar, Ian Kichurchak, Noah Crenshaw
 
 ---
 
@@ -68,8 +68,6 @@ Uses toLocaleDateString('en-CA') to ensure dates align with Ashland’s local ti
 
 
 Heatmap Manifest
-
-
 Visual deployment bars
 🟦 Blue = Available
 🟧 Amber = Busy
@@ -112,5 +110,3 @@ If you want, I can also:
 - Tighten this for a **research submission**
 - Add **architecture diagrams**
 - Split it into `README.md` + `CONTRIBUTING.md`
-
-Just say the word 👍
