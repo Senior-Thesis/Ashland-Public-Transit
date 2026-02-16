@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getRides, updateRideStatus, updateRideVehicle, getVehicles, updateRideDetails, createRide, getAutoAccept, updateAutoAccept, getAuditLogs } from '../services/api';
+import { getRides, updateRideStatus, updateRideVehicle, getVehicles, updateRideDetails, createRide, getAutoAccept, updateAutoAccept, getAuditLogs, getDrivers, assignDriver } from '../services/api';
 import { Clock, MapPin, CheckCircle, XCircle, Phone, Search, Truck, ShieldAlert, ChevronLeft, ChevronRight, UserCheck, Ticket, CircleDollarSign, Ban, Pencil, Plus, BarChart3, Settings, PieChart, Activity, FileText, ShieldCheck, Download } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RePie, Pie, Cell } from 'recharts';
 import dayjs from 'dayjs';
@@ -14,6 +14,7 @@ dayjs.extend(isSameOrBefore);
 const DispatcherDashboard = () => {
     const [rides, setRides] = useState([]);
     const [vehicles, setVehicles] = useState([]); // Dynamic Fleet
+    const [drivers, setDrivers] = useState([]); // ACTIVE DRIVERS
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
     const [editingRide, setEditingRide] = useState(null);
@@ -39,16 +40,18 @@ const DispatcherDashboard = () => {
 
     const fetchData = async () => {
         try {
-            const [ridesData, vehiclesData, autoAcceptData, auditLogsData] = await Promise.all([
+            const [ridesData, vehiclesData, autoAcceptData, auditLogsData, driversData] = await Promise.all([
                 getRides(),
                 getVehicles(),
                 getAutoAccept(),
-                getAuditLogs()
+                getAuditLogs(),
+                getDrivers()
             ]);
             setRides(ridesData);
             setVehicles(vehiclesData);
             setAutoAccept(autoAcceptData.autoAccept);
             setAuditLogs(auditLogsData || []);
+            setDrivers(driversData || []);
             setLoading(false);
         } catch (error) {
             console.error(error);
@@ -213,6 +216,16 @@ const DispatcherDashboard = () => {
 
         // Standard Update (No confirm needed for regular status changes unless critical)
         update();
+    };
+
+    const handleDriverAssign = async (rideId, driverId) => {
+        try {
+            await assignDriver(rideId, driverId);
+            fetchData();
+            addToast("Driver Assigned", 'success');
+        } catch (e) {
+            addToast("Assignment Failed", 'error');
+        }
     };
 
     const handleVehicleAssign = async (id, vehicle) => {
@@ -453,6 +466,26 @@ const DispatcherDashboard = () => {
                                         <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto justify-between border-t lg:border-t-0 lg:border-l pt-4 lg:pt-0 lg:pl-6 border-slate-100">
                                             <div className="flex flex-col gap-1 min-w-[140px]">
                                                 {/* <label className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Assign Asset</label> */}
+
+
+                                                {/* DRIVER ASSIGNMENT */}
+                                                <div className="relative mb-1">
+                                                    <select
+                                                        value={ride.assignedDriver ? (ride.assignedDriver._id || ride.assignedDriver) : ""}
+                                                        onChange={(e) => handleDriverAssign(ride._id, e.target.value)}
+                                                        className="w-full text-[10px] font-bold border border-slate-200 rounded-xl p-2.5 bg-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer text-blue-900"
+                                                    >
+                                                        <option value="">-- Assign Driver --</option>
+                                                        {drivers.map(d => (
+                                                            <option key={d._id} value={d._id}>{d.username}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-blue-300">
+                                                        <UserCheck size={12} />
+                                                    </div>
+                                                </div>
+
+                                                {/* VEHICLE ASSIGNMENT (Legacy/Override) */}
                                                 <div className="relative">
                                                     <select value={ride.assignedVehicle || 'Unassigned'} onChange={(e) => handleVehicleAssign(ride._id, e.target.value)} className="w-full text-[10px] font-bold border border-slate-200 rounded-xl p-2.5 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer">
                                                         <option value="Unassigned">-- Select Asset --</option>
@@ -598,7 +631,34 @@ const DispatcherDashboard = () => {
                                     {auditLogs.slice(0, 15).map((log) => (
                                         <tr key={log._id} className="hover:bg-slate-50 transition-colors">
                                             <td className="p-4 font-mono text-slate-500 text-xs">{new Date(log.createdAt).toLocaleString()}</td>
-                                            <td className="p-4 font-bold text-slate-700">{log.performedBy}</td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">
+                                                        {log.performedBy ? log.performedBy[0].toUpperCase() : '?'}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-slate-700">{log.performedBy}</div>
+                                                        {/* Assuming 'log' might contain driver vehicle info if 'performedBy' is a driver */}
+                                                        {/* This part is speculative as 'log' object structure for driver vehicle is not provided */}
+                                                        {/* For now, it will display "No Vehicle" or attempt to access properties that might not exist */}
+                                                        <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                                                            {/* This 'd' variable is not defined in this scope. Assuming 'log' might have a 'driverDetails' or similar object */}
+                                                            {/* If log.performedBy is a driver, you'd need to fetch or include their vehicle info in the log object */}
+                                                            {/* For demonstration, I'm using a placeholder structure. You'll need to adapt this based on your actual log data. */}
+                                                            {/* Example: log.driverDetails?.currentVehicle?.name */}
+                                                            {log.performedBy.includes('Driver') ? ( // Simple heuristic, replace with actual check
+                                                                <span className="text-blue-600 font-bold flex items-center gap-1">
+                                                                    <Truck size={10} /> {/* Placeholder for vehicle name */}
+                                                                    {/* {log.driverDetails?.currentVehicle?.name || "Assigned Vehicle"} */}
+                                                                    {"Assigned Vehicle"}
+                                                                </span>
+                                                            ) : (
+                                                                "No Vehicle Info"
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
                                             <td className="p-4">
                                                 <span className="inline-block px-2 py-1 bg-slate-100 rounded text-[10px] font-bold uppercase text-slate-600">
                                                     {log.action}

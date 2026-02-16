@@ -22,12 +22,8 @@ const LandingPage = ({ onLogin }) => {
         fetchFleetStatus();
     }, []);
 
-    const handleStaffAccess = (e) => {
-        e.preventDefault();
-        const success = onLogin();
-        if (success) {
-            navigate('/dashboard');
-        }
+    const handleStaffAccess = () => {
+        navigate('/dispatcher/login');
     };
 
     return (

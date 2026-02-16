@@ -89,8 +89,13 @@ The Driver Module (built by the external team) should interact with the followin
 
 ## 🔐 Access Credentials (Demo)
 
-*   **Dispatcher Portal**: Code `Ashland2026`
-*   **Driver View**: Code `ASH2026`
+### Dispatcher Portal
+*   **Username**: `admin`
+*   **Password**: `Ashland2026`
+
+### Driver Portal
+*   **Username**: `testdriver`
+*   **Password**: `password123`
 
 ---
 

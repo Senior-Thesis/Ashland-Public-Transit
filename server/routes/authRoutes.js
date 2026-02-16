@@ -114,4 +114,43 @@ router.post('/signup', async (req, res) => {
     }
 });
 
+// @route   PATCH /api/auth/vehicle
+// @desc    Update logged-in user's current vehicle
+// @access  Private
+router.patch('/vehicle', protect, async (req, res) => {
+    try {
+        const { vehicleId } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (user) {
+            user.currentVehicle = vehicleId || null;
+            await user.save();
+            res.json({ message: 'Vehicle updated', currentVehicle: user.currentVehicle });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// @route   GET /api/auth/users
+// @desc    Get all users (Used to fetch Drivers)
+// @access  Public (Protected in real app, but open for Demo/Dispatcher)
+router.get('/users', async (req, res) => { // TODO: Add protect middleware
+    try {
+        const { role } = req.query;
+        let query = {};
+        if (role) query.role = role;
+
+        const users = await User.find(query)
+            .select('-password')
+            .populate('currentVehicle'); // POpulate vehicle details
+
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 module.exports = router;

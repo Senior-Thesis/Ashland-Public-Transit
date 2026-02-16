@@ -113,6 +113,14 @@ const RideSchema = new mongoose.Schema({
         default: 'Unassigned'
     },
 
+    // 6b. INDIVIDUALIZED DRIVER ASSIGNMENT
+    // Links a specific human driver (User) to this ride
+    assignedDriver: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+
     dispatcherNotes: { type: String },
 
     // 7. Scheduling

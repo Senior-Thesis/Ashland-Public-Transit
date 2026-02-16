@@ -130,3 +130,37 @@ export const getAuditLogs = async () => {
         return [];
     }
 };
+
+// DISPATCHER: Get All Drivers
+export const getDrivers = async () => {
+    try {
+        const response = await axios.get(`${AUTH_URL}/users?role=Driver`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching drivers:", error);
+        return [];
+    }
+};
+
+// DRIVER: Update Self Current Vehicle
+export const updateUserVehicle = async (vehicleId) => {
+    try {
+        // vehicleId can be null to unassign
+        const response = await axios.patch(`${AUTH_URL}/vehicle`, { vehicleId });
+        return response.data;
+    } catch (error) {
+        console.error("Error updating user vehicle:", error);
+        throw error;
+    }
+};
+
+// DISPATCHER: Assign Driver to Ride
+export const assignDriver = async (rideId, driverId, vehicleId, vehicleName) => {
+    try {
+        const response = await axios.patch(`${API_URL}/${rideId}/assign`, { driverId, vehicleId, vehicleName });
+        return response.data;
+    } catch (error) {
+        console.error("Error assigning driver:", error);
+        throw error;
+    }
+};

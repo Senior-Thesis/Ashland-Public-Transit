@@ -254,6 +254,27 @@ router.post('/', async (req, res) => {
                 }]
             });
 
+            // --- AUTO-ASSIGNMENT LOGIC (If Auto-Accept ON) ---
+            if (autoAccept) {
+                // Find first available driver (User with role 'Driver')
+                // Note: This is a basic Round-Robin or First-Available implementation
+                const User = require('../models/User');
+                // Find a driver who is NOT currently driving a confirmed ride in this slot? 
+                // For simplified phase 1: Just assign to *any* driver to show functionality, or skip specific load balancing.
+                // Let's try to find a driver.
+                const drivers = await User.find({ role: 'Driver' });
+                if (drivers.length > 0) {
+                    // Random assignment for now to distribute load
+                    const randomDriver = drivers[Math.floor(Math.random() * drivers.length)];
+                    newRide.assignedDriver = randomDriver._id;
+                    newRide.logs.push({
+                        user: 'System',
+                        action: 'Auto-Assigned',
+                        details: `Assigned to ${randomDriver.username}`
+                    });
+                }
+            }
+
             await newRide.save({ session });
             await session.commitTransaction();
 
@@ -273,13 +294,66 @@ router.post('/', async (req, res) => {
 
 /**
  * @route   GET /api/rides
+ * @desc    Fetch rides. Supports filtering by Driver ID for individual manifests.
  */
+router.get('/ping', (req, res) => res.send('pong'));
+
 router.get('/', async (req, res) => {
     try {
-        const rides = await Ride.find().sort({ scheduledTime: 1 });
+        const { driverId } = req.query;
+        let query = {};
+
+        // INDIVIDUALIZED MANIFEST LOGIC
+        if (driverId) {
+            query = {
+                $or: [
+                    { assignedDriver: driverId }, // Assigned to me
+                    { assignedDriver: null, status: 'Confirmed' }, // Or unassigned pool (Confirmed only)
+                    { assignedDriver: { $exists: false }, status: 'Confirmed' } // Safety for schema migration
+                ]
+            };
+        }
+
+        const rides = await Ride.find(query).sort({ scheduledTime: 1 }).populate('assignedDriver', 'username');
         res.json(rides);
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+});
+
+/**
+ * @route   PATCH /api/rides/:id/assign
+ * @desc    Assign a Driver AND Vehicle to a ride
+ */
+router.patch('/:id/assign', protect, async (req, res) => {
+    try {
+        const { driverId, vehicleId, vehicleName } = req.body;
+        console.log(`👨‍✈️ Assigning Driver ${driverId} to Ride ${req.params.id}`);
+
+        const updateData = {};
+
+        // 1. Assign Driver
+        if (driverId) updateData.assignedDriver = driverId;
+
+        // 2. Assign Vehicle (Keep legacy string field for now)
+        if (vehicleName) updateData.assignedVehicle = vehicleName;
+
+        const updatedRide = await Ride.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true }
+        ).populate('assignedDriver', 'username');
+
+        if (!updatedRide) return res.status(404).json({ message: "Ride not found" });
+
+        // 3. OPTIONAL: Update Vehicle's currentDriver (for fleet tracking)
+        if (vehicleId && driverId) {
+            await Vehicle.findByIdAndUpdate(vehicleId, { currentDriver: driverId });
+        }
+
+        res.json(updatedRide);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
     }
 });
 

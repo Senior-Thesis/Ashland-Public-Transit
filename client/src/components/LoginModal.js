@@ -2,20 +2,26 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, LogIn } from 'lucide-react';
 
-const LoginModal = ({ isOpen, onClose, onLogin, title = "Access Portal" }) => {
+const LoginModal = ({ isOpen, onClose, onLogin, title = "Access Portal", showUsername = false, onLoginSuccess }) => {
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // "Access Code" implies strictly password, so we default username to 'admin'
-            // This preserves the simple UI while using the secure backend
-            const data = await onLogin('admin', password);
+            // If showUsername is false, force 'admin' (Legacy Dispatcher Mode)
+            const user = showUsername ? username : 'admin';
+            const data = await onLogin(user, password);
             if (data) {
+                setUsername('');
                 setPassword('');
                 setError(false);
-                onClose();
+                if (onLoginSuccess) {
+                    onLoginSuccess();
+                } else {
+                    onClose();
+                }
             }
         } catch (err) {
             setError(true);
@@ -51,17 +57,35 @@ const LoginModal = ({ isOpen, onClose, onLogin, title = "Access Portal" }) => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Access Code</label>
-                            <input
-                                type="password"
-                                autoFocus
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className={`w-full p-4 bg-slate-50 border-2 rounded-2xl font-black text-lg text-center tracking-widest outline-none transition-all ${error ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-slate-100 focus:border-blue-500 text-slate-800'}`}
-                                placeholder="••••••••"
-                            />
-                            {error && <p className="text-xs font-bold text-red-500 text-center animate-bounce">Access Denied</p>}
+                        <div className="space-y-4">
+                            {/* USERNAME FIELD (Conditional) */}
+                            {showUsername && (
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Username</label>
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-lg text-slate-800 outline-none focus:border-blue-500 transition-all placeholder:text-slate-300"
+                                        placeholder="Enter Username"
+                                    />
+                                </div>
+                            )}
+
+                            {/* PASSWORD FIELD */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{showUsername ? 'Password' : 'Access Code'}</label>
+                                <input
+                                    type="password"
+                                    autoFocus={!showUsername}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className={`w-full p-4 bg-slate-50 border-2 rounded-2xl font-black text-lg ${!showUsername && 'text-center tracking-widest'} outline-none transition-all ${error ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-slate-100 focus:border-blue-500 text-slate-800'}`}
+                                    placeholder={showUsername ? "••••••••" : "••••••••"}
+                                />
+                                {error && <p className="text-xs font-bold text-red-500 text-center animate-bounce">Access Denied</p>}
+                            </div>
                         </div>
 
                         <button type="submit" className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">

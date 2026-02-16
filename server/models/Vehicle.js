@@ -25,6 +25,13 @@ const VehicleSchema = new mongoose.Schema({
         enum: ['Active', 'In Shop'],
         default: 'Active'
     },
+    // --- DRIVER ASSIGNMENT ---
+    // Tracks who is currently driving this vehicle (for the day/shift)
+    currentDriver: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
     // --- MAINTENANCE TRACKING ---
     engineHours: {
         type: Number,

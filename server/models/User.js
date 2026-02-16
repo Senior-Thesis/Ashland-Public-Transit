@@ -26,6 +26,11 @@ const UserSchema = new mongoose.Schema({
     walletBalance: {
         type: Number,
         default: 0
+    },
+    currentVehicle: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Vehicle',
+        default: null
     }
 }, { timestamps: true });
 
